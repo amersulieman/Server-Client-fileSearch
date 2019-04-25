@@ -1,3 +1,13 @@
+'''
+@author Amer Sulieman
+@version 04/20/2019
+
+Client.py   
+    Client side of a sever-client communication
+    The client only asks for a file from the server
+    and expect server to send the client the file
+    if it exists...
+'''
 import socket
 import sys
 import os
@@ -9,6 +19,7 @@ class Client():
         self.portToConnectTo = 1357
         self.fileLookingFor = sys.argv[1]
 
+    #Set up client socket and connect it to the server end using the given port in client object
     def setUpSocketAndConnect(self):
         #create Client Socket
         self.clt_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -19,9 +30,10 @@ class Client():
             self.clt_socket.connect(serverAddress)
             print("Connecting to {} with {}".format(self.localHostName,self.localHostAddress))
         except:
-            print("Problem Connecting to server....")
+            print("Problem Connecting to server....\nServer might be asleep....")
             sys.exit()
 
+    #Send the filname as bytes and wait for server response
     def send(self):
         try:
             self.clt_socket.send(bytes(self.fileLookingFor,"utf-8"))
@@ -32,12 +44,12 @@ class Client():
             self.clt_socket.close()
             sys.exit()
 
+    #if received the confirmation that the file exists then creat new file and save received data to it
     def receive(self):
         confirmationFile = self.clt_socket.recv(1096).decode()
-        print(confirmationFile)
-        print("Received confirmation if file exists.....")
         if confirmationFile == "True":
             try:
+                #breaks file name and its extension for saving different name
                 fileName,extension= os.path.splitext(self.fileLookingFor)
                 totalData = b""
                 while True:
@@ -56,7 +68,7 @@ class Client():
         else:
             print("The File {} is not available".format(self.fileLookingFor))
 
-
+#checks if file name given to command line args
 if len(sys.argv)<2:
     print("Please provide File name.....")
     sys.exit()
