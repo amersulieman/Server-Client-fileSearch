@@ -1,45 +1,65 @@
 import socket
-import socket
 import os.path as path
+import sys
 class Server():
-    def __init__(self,sAdds,port,connection):
-        self.serverAddress=sAdds
-        self.portListening = port
-        self.connection = connection
+    def __init__(self):
+        self.serverAddress=None
+        self.portListening = 1357
+        self.localHostName = None
+        self.serverSocket = None
+        self.socketConnection =None
         self.fileName= None
+
+    def setUpSocket(self):
+        #create server socket
+        self.serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.localHostName = socket.gethostname()
+        self.serverAddress = socket.gethostbyname(self.localHostName)
+        print("working with {}, {}".format(self.localHostName,self.serverAddress))
+        print("Starting up {} with port {}".format(self.serverAddress,self.portListening))
+        try:
+            self.serverSocket.bind((self.serverAddress,self.portListening))
+        except:
+            print("Problem binding port number to server address...")
+            sys.exit()
+
+    def setUpconnection(self):
+        #accept one if multiple connections came
+        try:
+            self.serverSocket.listen(1)
+            print("WAITING FOR CONNECTIONS.......")
+            self.serverSocket.settimeout(40)
+            self.socketConnection,clt_adds = self.serverSocket.accept()
+            print("Connection from {}".format(clt_adds))
+        except:
+            print("Time out waiting for connection.....")
+            sys.exit()
+
     def send(self):
-        if path.isfile("./"+self.fileName):
-            with open("./"+self.fileName,"rb")as myFile:
+        if path.isfile(self.fileName):
+            with open(self.fileName,"rb")as myFile:
                 try:
-                    self.connection.sendfile(myFile)
+                    self.socketConnection.sendfile(myFile)
+                    print("Server Sent File successfully...")
                 except:
-                    self.connection.send(b"Server has issues sending...")
+                    print("Server has issues sending...")
         else:
-            self.connection.send(b"File Does not Exist!")
+            self.socketConnection.send(b"-1")
 
     def receive(self):
         try:
-            receivedName=self.connection.recv(4096).decode()
+            receivedName=self.socketConnection.recv(4096).decode()
             self.fileName=receivedName
+            print("Server Searching for the file...")
         except:
-            self.connection.send(b"Problem receiving...")
-#create server socket
-serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-#get the name of the host where python interpreter works
-localHost= socket.gethostname()
-#get the ip address according to the name
-ip_address = socket.gethostbyname(localHost)
-print("working with {},{}".format(localHost,ip_address))
-serverAddress = (ip_address, 1357)
-print("Starting up {} with port {}".format(serverAddress[0],serverAddress[1]))
-serverSocket.bind(serverAddress)
-#accept one if multiple connections came
-serverSocket.listen(1)
-print("WAITING FOR CONNECTIONS.......")
-conn,clt_adds = serverSocket.accept()
-print("Connection from {}".format(clt_adds))
-myserver = Server(ip_address,1357,conn)
+            print("Problem receiving...")
+            self.socketConnection.shutdown(socket.SHUT_RDWR)
+            self.socketConnection.close()
+            
+myserver = Server()
+myserver.setUpSocket()
+myserver.setUpconnection()
 myserver.receive()
 myserver.send()
-conn.close()
-serverSocket.close()
+myserver.socketConnection.shutdown(socket.SHUT_RDWR)
+myserver.socketConnection.close()
