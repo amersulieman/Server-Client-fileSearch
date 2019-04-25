@@ -2,7 +2,6 @@ import socket
 import sys
 import os
 class Client():
-
     def __init__(self):
         self.localHostAddress= None
         self.localHostName = None
@@ -34,9 +33,10 @@ class Client():
             sys.exit()
 
     def receive(self):
-        if self.clt_socket.recv(16).decode()=="-1":
-            print("The file {} not available....".format(self.fileLookingFor))
-        else:
+        confirmationFile = self.clt_socket.recv(1096).decode()
+        print(confirmationFile)
+        print("Received confirmation if file exists.....")
+        if confirmationFile == "True":
             try:
                 fileName,extension= os.path.splitext(self.fileLookingFor)
                 totalData = b""
@@ -52,8 +52,9 @@ class Client():
                 except:
                     print("Problem saving file data...")
             except:
-                print("Problem receiving...")
-
+                print("Problem receiving data from server...")
+        else:
+            print("The File {} is not available".format(self.fileLookingFor))
 
 
 if len(sys.argv)<2:

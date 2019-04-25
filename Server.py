@@ -35,17 +35,6 @@ class Server():
             print("Time out waiting for connection.....")
             sys.exit()
 
-    def send(self):
-        if path.isfile(self.fileName):
-            with open(self.fileName,"rb")as myFile:
-                try:
-                    self.socketConnection.sendfile(myFile)
-                    print("Server Sent File successfully...")
-                except:
-                    print("Server has issues sending...")
-        else:
-            self.socketConnection.send(b"-1")
-
     def receive(self):
         try:
             receivedName=self.socketConnection.recv(4096).decode()
@@ -56,10 +45,26 @@ class Server():
             self.socketConnection.shutdown(socket.SHUT_RDWR)
             self.socketConnection.close()
             
+    def send(self):
+        confirmation = self.fileConfirm()
+        print(confirmation)
+        print("Server sending confirtmation if file exists...")
+        self.socketConnection.send(bytes(confirmation,"utf-8"))
+        if confirmation=="True":
+            with open(self.fileName,"rb")as myFile:
+                try:
+                    self.socketConnection.sendfile(myFile)
+                    print("Server Sent File successfully...")
+                except:
+                    print("Server has issues sending...")
+
+    def fileConfirm(self):
+        if path.isfile(self.fileName):
+            return "True"
+        else: return "False"
 myserver = Server()
 myserver.setUpSocket()
 myserver.setUpconnection()
 myserver.receive()
 myserver.send()
-myserver.socketConnection.shutdown(socket.SHUT_RDWR)
 myserver.socketConnection.close()
