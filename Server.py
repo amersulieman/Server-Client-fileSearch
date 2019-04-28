@@ -13,7 +13,7 @@ import os.path as path
 import sys
 class Server():
     def __init__(self):
-        self.serverAddress=None
+        self.serverAddress=None     
         self.portListening = 1357
         self.localHostName = None
         self.serverSocket = None
@@ -24,11 +24,12 @@ class Server():
     def setUpSocket(self):
         #create server socket
         self.serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.localHostName = socket.gethostname()
+        self.localHostName = socket.gethostname() 
         self.serverAddress = socket.gethostbyname(self.localHostName)
         print("working with {}, {}".format(self.localHostName,self.serverAddress))
         print("Starting up {} with port {}".format(self.serverAddress,self.portListening))
         try:
+            #bind address and port to socket
             self.serverSocket.bind((self.serverAddress,self.portListening))
         except:
             print("Problem binding port number to server address...")
@@ -36,11 +37,12 @@ class Server():
 
     #setup connecttion with the socket created, and wait for connection from client
     def setUpconnection(self):
-        #accept one if multiple connections came
         try:
+            #accept one connection if multiple connections came before accept method
             self.serverSocket.listen(1)
             print("WAITING FOR CONNECTIONS.......")
-            self.serverSocket.settimeout(40) #timeout after 40 seconds if no connections
+            self.serverSocket.settimeout(40)  #timeout after 40 seconds if no connections
+            #new socket and its address return after connection is made
             self.socketConnection,clt_adds = self.serverSocket.accept()
             print("Connection from {}".format(clt_adds))
         except:
@@ -50,22 +52,25 @@ class Server():
     #receive file name that the client looking for 
     def receive(self):
         try:
+            #decode the sent bytes (file name)
             receivedName=self.socketConnection.recv(4096).decode() 
             self.fileName=receivedName
             print("Server Searching for the file...")
         except:
             print("Problem receiving...")
+            #shuts connection if problem occured receiving
             self.socketConnection.shutdown(socket.SHUT_RDWR)
             self.socketConnection.close()
 
-    #check if file exists and send confirmation
     #if exists then send file
     def send(self):
-        confirmation = self.fileConfirm()
-        self.socketConnection.send(bytes(confirmation,"utf-8"))
-        if confirmation=="True":
+        #check if file exists and send confirmation
+        confirmation = self.fileConfirm() #different function
+        self.socketConnection.send(bytes(confirmation,"utf-8")) # send true or false encoded for confirmation
+        if confirmation=="True":    # if confired file exists then open it in binary
             with open(self.fileName,"rb")as myFile:
                 try:
+                    #send the file to client 
                     self.socketConnection.sendfile(myFile)
                     print("Server Sent File successfully...")
                 except:
@@ -76,9 +81,16 @@ class Server():
         if path.isfile(self.fileName):
             return "True"
         else: return "False"
+
+#create server object            
 myserver = Server()
+#setup socket
 myserver.setUpSocket()
+#look for connection
 myserver.setUpconnection()
+#receive from client if connection established
 myserver.receive()
+#send file if exists
 myserver.send()
+#close connection
 myserver.socketConnection.close()
